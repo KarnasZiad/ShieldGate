@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, inject, it } from 'vitest';
 import { type App, buildApp } from '../../src/app.js';
 import { createDependencies } from '../../src/container.js';
+import { createPool } from '../../src/infrastructure/postgres.js';
 import { PasswordHasher } from '../../src/modules/users/password-hasher.js';
 import { testConfig } from '../../src/testing/config.js';
 
@@ -21,6 +22,11 @@ describe('ShieldGate end to end', () => {
       // Unexpected errors are logged, so a failure here can be diagnosed from the CI output.
       LOG_LEVEL: 'error',
     });
+    // Other suites share these databases: start from known state.
+    const pool = createPool(config.DATABASE_URL);
+    await pool.query('TRUNCATE users, policies CASCADE');
+    await pool.end();
+
     const created = await createDependencies(config);
     close = created.close;
     app = await buildApp(created.deps);

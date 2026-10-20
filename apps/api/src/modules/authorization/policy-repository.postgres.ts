@@ -20,9 +20,15 @@ export class PostgresPolicyRepository implements PolicyRepository {
       'SELECT id, description, effect, actions, resources, roles, condition FROM policies ORDER BY id',
     );
     // Validated again on the way out: a row edited by hand cannot inject an unknown operator.
-    return rows.map(({ condition, ...row }) =>
-      PolicySchema.parse(condition === null ? row : { ...row, condition }),
-    );
+    // An invalid row fails the whole read, so the decision point fails closed: skipping it could
+    // silently drop a deny policy.
+    return rows.map(({ condition, ...row }) => {
+      const result = PolicySchema.safeParse(condition === null ? row : { ...row, condition });
+      if (!result.success) {
+        throw new Error(`Stored policy "${row.id}" is invalid: ${result.error.message}`);
+      }
+      return result.data;
+    });
   }
 
   async upsert(policy: Policy, updatedBy: string): Promise<boolean> {
