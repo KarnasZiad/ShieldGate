@@ -2,6 +2,7 @@
 import js from '@eslint/js';
 import { defineConfig, globalIgnores } from 'eslint/config';
 import prettier from 'eslint-config-prettier/flat';
+import pluginVue from 'eslint-plugin-vue';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
@@ -28,6 +29,31 @@ export default defineConfig(
   },
   {
     files: ['apps/api/**/*.ts'],
+    languageOptions: { globals: globals.node },
+  },
+  {
+    files: ['apps/console/**/*.{ts,vue}'],
+    languageOptions: { globals: globals.browser },
+  },
+  pluginVue.configs['flat/recommended'],
+  {
+    // Single-file components: TypeScript syntax rules apply; types are checked by vue-tsc.
+    files: ['**/*.vue'],
+    extends: [tseslint.configs.disableTypeChecked],
+    languageOptions: {
+      parserOptions: {
+        parser: tseslint.parser,
+        extraFileExtensions: ['.vue'],
+        projectService: false,
+      },
+    },
+    rules: {
+      // Prettier owns formatting; eslint-config-prettier turns the conflicting Vue rules off.
+      'vue/multi-word-component-names': 'off',
+    },
+  },
+  {
+    files: ['apps/console/vite.config.ts'],
     languageOptions: { globals: globals.node },
   },
   {
