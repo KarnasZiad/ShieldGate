@@ -50,6 +50,13 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Diagnose MongoDB startup (temporary)
+        run: |
+          docker run -d --name mongo-probe mongo:8.0 || true
+          sleep 10
+          docker ps -a --filter name=mongo-probe
+          docker logs mongo-probe 2>&1 | tail -30
+          uname -a
       - run: pnpm test:integration
 
   docker:
