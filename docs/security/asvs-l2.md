@@ -71,16 +71,16 @@ au moins un test automatisé cité. Légende : ✅ conforme · 🟡 partiel · �
 
 ## V13 — API et V14 — Configuration
 
-| ID       | Exigence (résumé)                                     | État | Preuve                                                          |
-| -------- | ----------------------------------------------------- | ---- | --------------------------------------------------------------- |
-| 13.1.3   | Pas de secret dans les URL                            | ✅   | Clés API en en-tête `Authorization`                             |
-| 13.2.5   | Type de contenu validé                                | ✅   | Fastify refuse les types inattendus (415)                       |
-| 14.2.1   | Composants à jour, vulnérabilités suivies             | ✅   | Dependabot, Trivy, revue des dépendances en PR                  |
-| 14.2.3   | Dépendances de CI épinglées                           | ✅   | Actions GitHub épinglées par SHA                                |
-| 14.3.2   | Pas de mode debug en production                       | ✅   | Documentation OpenAPI absente en production · `openapi.spec.ts` |
-| 14.4.3   | En-tête CSP                                           | ✅   | `default-src 'none'` · `app.spec.ts`                            |
-| 14.4.4–7 | `nosniff`, HSTS, `Referrer-Policy`, `frame-ancestors` | ✅   | `app.spec.ts`                                                   |
-| 14.5.3   | CORS restreint à une liste d'origines                 | ✅   | `app.spec.ts`                                                   |
+| ID       | Exigence (résumé)                                     | État | Preuve                                                                                              |
+| -------- | ----------------------------------------------------- | ---- | --------------------------------------------------------------------------------------------------- |
+| 13.1.3   | Pas de secret dans les URL                            | ✅   | Clés API en en-tête `Authorization`                                                                 |
+| 13.2.5   | Type de contenu validé                                | ✅   | Fastify refuse les types inattendus (415)                                                           |
+| 14.2.1   | Composants à jour, vulnérabilités suivies             | ✅   | Dependabot, Trivy, revue des dépendances en PR                                                      |
+| 14.2.3   | Dépendances de CI épinglées                           | ✅   | Actions GitHub épinglées par SHA                                                                    |
+| 14.3.2   | Pas de mode debug en production                       | ✅   | Documentation OpenAPI absente en production · `openapi.spec.ts`                                     |
+| 14.4.3   | En-tête CSP                                           | ✅   | API `default-src 'none'` · `app.spec.ts` ; console : `apps/console/nginx.conf` sans `unsafe-inline` |
+| 14.4.4–7 | `nosniff`, HSTS, `Referrer-Policy`, `frame-ancestors` | ✅   | `app.spec.ts`                                                                                       |
+| 14.5.3   | CORS restreint à une liste d'origines                 | ✅   | `app.spec.ts`                                                                                       |
 
 ## Prochaines actions
 

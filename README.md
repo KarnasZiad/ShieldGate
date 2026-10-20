@@ -38,7 +38,7 @@ journal d'audit, pour toutes les applications d'une entreprise.
 
 | Document                                                             | Contenu                                            |
 | -------------------------------------------------------------------- | -------------------------------------------------- |
-| [Modèle de menaces STRIDE](docs/security/threat-model-stride.md)     | 20 menaces, leurs mesures et les risques résiduels |
+| [Modèle de menaces STRIDE](docs/security/threat-model-stride.md)     | 21 menaces, leurs mesures et les risques résiduels |
 | [Checklist ASVS niveau 2](docs/security/asvs-l2.md)                  | Chaque exigence avec son code et son test          |
 | [Flux d'authentification](docs/architecture/authentication-flows.md) | Connexion, MFA, sessions, verrouillage             |
 | [Modèle d'autorisation](docs/architecture/authorization-model.md)    | Politiques, logique à trois valeurs                |
