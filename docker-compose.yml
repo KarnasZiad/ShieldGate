@@ -1,0 +1,92 @@
+# Local stack.
+#   docker compose up -d                  PostgreSQL, MongoDB and Redis (run the API with pnpm dev)
+#   docker compose --profile app up -d    full stack built from the Dockerfiles
+name: shieldgate
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: shieldgate
+      POSTGRES_USER: shieldgate
+      POSTGRES_PASSWORD: shieldgate
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U shieldgate -d shieldgate']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  mongo:
+    image: mongo:8.0
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: root
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo-data:/data/db
+      - ./infra/mongo/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ['CMD', 'mongosh', '--quiet', '--eval', 'db.adminCommand("ping").ok']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7.4-alpine
+    command: ['redis-server', '--appendonly', 'yes']
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  migrate:
+    profiles: [app]
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    command: ['node', 'dist/cli/migrate.js']
+    environment: &api-environment
+      NODE_ENV: production
+      DATABASE_URL: postgresql://shieldgate:shieldgate@postgres:5432/shieldgate
+      MONGODB_URL: mongodb://shieldgate:shieldgate@mongo:27017/?authSource=shieldgate
+      REDIS_URL: redis://redis:6379
+      CONSOLE_ORIGINS: http://localhost:8080
+      # The local stack is served over plain HTTP.
+      COOKIE_SECURE: 'false'
+      TOTP_ENCRYPTION_KEYS: ${TOTP_ENCRYPTION_KEYS:?Set TOTP_ENCRYPTION_KEYS in .env}
+      API_KEY_PEPPER: ${API_KEY_PEPPER:?Set API_KEY_PEPPER in .env}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    profiles: [app]
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment: *api-environment
+    ports:
+      - '4000:4000'
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  mongo-data:
+  redis-data:

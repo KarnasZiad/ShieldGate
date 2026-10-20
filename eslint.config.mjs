@@ -42,5 +42,10 @@ export default defineConfig(
     extends: [tseslint.configs.disableTypeChecked],
     languageOptions: { globals: globals.node },
   },
+  {
+    // mongosh scripts run by the MongoDB image on first start.
+    files: ['infra/mongo/**/*.js'],
+    languageOptions: { globals: { db: 'readonly' } },
+  },
   prettier,
 );
