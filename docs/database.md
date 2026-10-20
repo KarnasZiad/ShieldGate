@@ -71,12 +71,16 @@ un export SIEM sans transformation :
 }
 ```
 
-| Index                                     | Usage                           |
-| ----------------------------------------- | ------------------------------- |
-| `{ "@timestamp": -1 }`                    | Derniers événements, pagination |
-| `{ "user.id": 1, "@timestamp": -1 }`      | Historique d'un utilisateur     |
-| `{ "event.action": 1, "@timestamp": -1 }` | Filtre par type d'événement     |
-| TTL sur `@timestamp` (400 jours)          | Rétention automatique           |
+| Index                                | Usage                                       |
+| ------------------------------------ | ------------------------------------------- |
+| `_id` (par défaut)                   | Derniers événements, pagination par curseur |
+| `{ "user.id": 1, "_id": -1 }`        | Historique d'un acteur                      |
+| `{ "user.target.id": 1, "_id": -1 }` | Historique d'un compte visé par une action  |
+| `{ "event.action": 1, "_id": -1 }`   | Filtre par type d'événement                 |
+| TTL sur `@timestamp` (400 jours)     | Rétention automatique                       |
+
+L'`ObjectId` est croissant dans le temps : trier sur `_id` donne l'ordre chronologique et un
+curseur stable, sans index supplémentaire sur `@timestamp`.
 
 Pourquoi MongoDB : volume élevé en écriture, attributs variables selon l'événement, et besoin
 d'interroger par champs imbriqués. Le choix est détaillé dans l'[ADR 0003](adr/0003-postgresql-pour-l-identite-mongodb-pour-l-audit.md).
