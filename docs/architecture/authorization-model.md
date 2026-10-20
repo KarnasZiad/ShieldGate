@@ -45,12 +45,25 @@ Une politique combine un **rôle** (RBAC) et une **condition sur des attributs**
 | `condition` | `all`, `any`, `not`, `equals`, `in`, `greaterThan`, `lessThan`, `ipInCidr`, `timeBetween` |
 
 Les opérandes sont des littéraux ou des références `{ "ref": "subject.attributes.department" }`.
-Une référence absente rend la comparaison fausse : jamais d'autorisation par accident.
+Les références ne lisent que des propriétés propres (`__proto__` et consorts sont refusés).
+
+### Attribut absent : logique à trois valeurs
+
+Une condition qui porte sur un attribut absent ou d'un type inattendu est **indéterminée**, et
+`not`, `all`, `any` propagent cette indétermination. Le doute tranche toujours vers le refus :
+
+| Condition    | Politique `allow` | Politique `deny`  |
+| ------------ | ----------------- | ----------------- |
+| vraie        | s'applique        | s'applique        |
+| fausse       | ne s'applique pas | ne s'applique pas |
+| indéterminée | ne s'applique pas | **s'applique**    |
+
+Un attribut manquant ne peut donc ni accorder un droit, ni contourner une interdiction.
 
 ## Algorithme
 
 1. Garder les politiques dont l'action, la ressource et le rôle correspondent.
-2. Évaluer leur condition.
+2. Évaluer leur condition (vraie, fausse ou indéterminée).
 3. **Si une politique `deny` correspond, refuser** (_deny overrides_).
 4. Sinon, si une politique `allow` correspond, autoriser.
 5. Sinon, refuser (_default deny_).
