@@ -49,6 +49,7 @@ import { UsersService } from './modules/users/users.service.js';
 import { authenticatePlugin, sessionCookieName } from './plugins/authenticate.js';
 import { csrfPlugin } from './plugins/csrf.js';
 import { errorsPlugin } from './plugins/errors.js';
+import { openApiPlugin } from './plugins/openapi.js';
 import { createGuards } from './plugins/guards.js';
 import { rateLimitPlugin } from './plugins/rate-limit.js';
 import { securityPlugin } from './plugins/security.js';
@@ -178,6 +179,9 @@ export async function buildApp(deps: AppDeps): Promise<App> {
   });
   await app.register(csrfPlugin, { allowedOrigins: config.CONSOLE_ORIGINS });
 
+  if (config.NODE_ENV !== 'production') {
+    await app.register(openApiPlugin);
+  }
   await app.register(healthRoutes, { probes: deps.healthProbes });
   await app.register(authRoutes, {
     prefix: '/v1/auth',
