@@ -1,0 +1,10 @@
+# Every change is reviewed by a code owner before merging into main.
+* @KarnasZiad
+
+# Authentication, sessions, cryptography and authorization need a security-focused review.
+/apps/api/src/lib/crypto/ @KarnasZiad
+/apps/api/src/modules/auth/ @KarnasZiad
+/apps/api/src/modules/sessions/ @KarnasZiad
+/apps/api/src/modules/authorization/ @KarnasZiad
+/apps/api/migrations/ @KarnasZiad
+/docs/security/ @KarnasZiad
