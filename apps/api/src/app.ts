@@ -15,6 +15,7 @@ import type { Redis } from 'ioredis';
 import type { AppConfig } from './config.js';
 import type { Clock } from './lib/clock.js';
 import { SecretBox } from './lib/crypto/secret-box.js';
+import type { EphemeralStore } from './lib/ephemeral-store.js';
 import type { AuditLogger } from './modules/audit/audit-logger.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
 import { AuthService } from './modules/auth/auth.service.js';
@@ -27,6 +28,8 @@ import {
 import type { MfaChallengeStore } from './modules/auth/mfa-challenge.js';
 import { PolicyEngine } from './modules/authorization/policy-engine.js';
 import { type HealthProbe, healthRoutes } from './modules/health/health.routes.js';
+import { mfaRoutes } from './modules/mfa/mfa.routes.js';
+import { MfaService } from './modules/mfa/mfa.service.js';
 import type { SessionStore } from './modules/sessions/session.js';
 import { meRoutes } from './modules/users/me.routes.js';
 import { PasswordHasher } from './modules/users/password-hasher.js';
@@ -55,6 +58,8 @@ export interface AppDeps {
   audit: AuditLogger;
   hasher?: PasswordHasher;
   throttleRules?: Partial<LoginThrottleRules>;
+  /** Pending TOTP enrollments (sealed secrets), 10 minutes. */
+  pendingMfaSetups: EphemeralStore;
 }
 
 export type App = FastifyInstance<
@@ -134,6 +139,14 @@ export async function buildApp(deps: AppDeps): Promise<App> {
     clock: deps.clock,
   });
   const usersService = new UsersService(deps.users, hasher, deps.sessions, deps.audit);
+  const mfa = new MfaService({
+    users: deps.users,
+    pendingSetups: deps.pendingMfaSetups,
+    secretBox,
+    hasher,
+    audit: deps.audit,
+    clock: deps.clock,
+  });
   const cookieName = sessionCookieName(config.COOKIE_SECURE);
 
   deps.audit.start();
@@ -165,6 +178,7 @@ export async function buildApp(deps: AppDeps): Promise<App> {
     audit: deps.audit,
     guards,
   });
+  await app.register(mfaRoutes, { prefix: '/v1/me/mfa', mfa, guards });
   await app.register(usersRoutes, {
     prefix: '/v1',
     service: usersService,

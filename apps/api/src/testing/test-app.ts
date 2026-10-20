@@ -1,6 +1,7 @@
 import { type App, buildApp } from '../app.js';
 import type { AppConfig } from '../config.js';
 import { FixedClock } from '../lib/clock.js';
+import { InMemoryEphemeralStore } from '../lib/ephemeral-store.js';
 import { AuditLogger } from '../modules/audit/audit-logger.js';
 import type { LoginThrottleRules } from '../modules/auth/login-throttle.js';
 import type { HealthProbe } from '../modules/health/health.routes.js';
@@ -54,6 +55,7 @@ export async function createTestApp(options: TestAppOptions = {}): Promise<TestC
     sessions,
     loginThrottle: new InMemoryLoginThrottleStore(clock),
     mfaChallenges: new InMemoryMfaChallengeStore(clock),
+    pendingMfaSetups: new InMemoryEphemeralStore(clock),
     audit,
     hasher,
     ...(options.throttleRules ? { throttleRules: options.throttleRules } : {}),

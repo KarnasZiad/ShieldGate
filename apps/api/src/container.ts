@@ -4,6 +4,7 @@ import { connectMongo } from './infrastructure/mongo.js';
 import { createPool } from './infrastructure/postgres.js';
 import { createRedis } from './infrastructure/redis.js';
 import { systemClock } from './lib/clock.js';
+import { RedisEphemeralStore } from './lib/ephemeral-store.js';
 import { AuditLogger } from './modules/audit/audit-logger.js';
 import { MongoAuditStore } from './modules/audit/audit-store.mongo.js';
 import { RedisLoginThrottleStore } from './modules/auth/login-throttle.redis.js';
@@ -42,6 +43,7 @@ export async function createDependencies(
     }),
     loginThrottle: new RedisLoginThrottleStore(redis),
     mfaChallenges: new RedisMfaChallengeStore(redis),
+    pendingMfaSetups: new RedisEphemeralStore(redis, 'sg:mfa:setup:'),
     audit: new AuditLogger(auditStore, systemClock, {
       onError: (error, buffered) => {
         console.error(`Audit write failed (${buffered} events buffered): ${String(error)}`);

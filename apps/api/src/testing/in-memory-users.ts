@@ -23,6 +23,18 @@ export const DEFAULT_ROLES: Role[] = [
   { name: 'member', description: 'Own account only', permissions: [] },
 ];
 
+/** structuredClone would turn Buffers into plain Uint8Arrays: copy field by field instead. */
+function cloneUser(user: User): User {
+  return {
+    ...user,
+    roles: [...user.roles],
+    totpSecret: user.totpSecret ? Buffer.from(user.totpSecret) : null,
+    totpEnabledAt: user.totpEnabledAt ? new Date(user.totpEnabledAt) : null,
+    createdAt: new Date(user.createdAt),
+    updatedAt: new Date(user.updatedAt),
+  };
+}
+
 export class InMemoryRoleRepository implements RoleRepository {
   constructor(readonly roles: Role[] = DEFAULT_ROLES) {}
 
@@ -62,19 +74,19 @@ export class InMemoryUserRepository implements UserRepository {
       updatedAt: new Date(this.clock),
     };
     this.users.set(user.id, user);
-    return Promise.resolve(structuredClone(user));
+    return Promise.resolve(cloneUser(user));
   }
 
   findById(id: string): Promise<User | null> {
     const user = this.users.get(id);
-    return Promise.resolve(user ? structuredClone(user) : null);
+    return Promise.resolve(user ? cloneUser(user) : null);
   }
 
   findByEmail(email: string): Promise<User | null> {
     const user = [...this.users.values()].find(
       (item) => item.email.toLowerCase() === email.toLowerCase(),
     );
-    return Promise.resolve(user ? structuredClone(user) : null);
+    return Promise.resolve(user ? cloneUser(user) : null);
   }
 
   list({ cursor, limit, search }: UserListQuery): Promise<UserPage> {
@@ -91,7 +103,7 @@ export class InMemoryUserRepository implements UserRepository {
     const page = sorted.slice(start, start + limit);
     const last = page.at(-1);
     return Promise.resolve({
-      items: page.map((user) => structuredClone(user)),
+      items: page.map((user) => cloneUser(user)),
       nextCursor: sorted.length > start + limit && last ? last.id : null,
     });
   }
