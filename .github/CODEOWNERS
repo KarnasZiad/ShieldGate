@@ -1,4 +1,4 @@
-# Every change is reviewed by a code owner before merging into main.
+# Code owners are requested automatically on every pull request.
 * @KarnasZiad
 
 # Authentication, sessions, cryptography and authorization need a security-focused review.
