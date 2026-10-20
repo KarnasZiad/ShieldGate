@@ -21,7 +21,9 @@ export default async function setup(project: TestProject): Promise<() => Promise
     // Standalone server: the audit trail needs no replica set (no multi-document transactions).
     new GenericContainer('mongo:8.0')
       .withExposedPorts(27017)
-      .withWaitStrategy(Wait.forLogMessage(/Waiting for connections/))
+      // Waiting on the listening port, not on log lines: log streams proved unreliable on CI.
+      .withWaitStrategy(Wait.forListeningPorts())
+      .withStartupTimeout(60_000)
       .start(),
     new RedisContainer('redis:7.4-alpine').start(),
   ]);
