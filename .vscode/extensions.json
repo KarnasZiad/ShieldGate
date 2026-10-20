@@ -1,0 +1,9 @@
+{
+  "recommendations": [
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "vue.volar",
+    "mongodb.mongodb-vscode",
+    "vitest.explorer"
+  ]
+}
