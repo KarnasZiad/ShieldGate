@@ -1,22 +1,20 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import type { FastifyInstance } from 'fastify';
-import { buildApp, loggerOptions } from './app.js';
-import { systemClock } from './lib/clock.js';
+import { type App, loggerOptions } from './app.js';
 import type { HealthProbe } from './modules/health/health.routes.js';
-import { testConfig } from './testing/config.js';
+import { createTestApp } from './testing/test-app.js';
 
 const up: HealthProbe = { name: 'postgres', check: () => Promise.resolve() };
 const down: HealthProbe = { name: 'redis', check: () => Promise.reject(new Error('ECONNREFUSED')) };
 
 describe('application', () => {
-  let app: FastifyInstance | undefined;
+  let app: App | undefined;
 
   afterEach(async () => {
     await app?.close();
   });
 
   async function start(probes: HealthProbe[]) {
-    app = await buildApp({ config: testConfig(), clock: systemClock, healthProbes: probes });
+    ({ app } = await createTestApp({ probes }));
     return app;
   }
 
