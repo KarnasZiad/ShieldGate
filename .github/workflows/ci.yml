@@ -38,7 +38,7 @@ jobs:
           retention-days: 7
 
   integration:
-    name: Integration tests (PostgreSQL, Redis)
+    name: Integration tests (PostgreSQL, MongoDB, Redis)
     needs: quality
     runs-on: ubuntu-latest
     timeout-minutes: 20
