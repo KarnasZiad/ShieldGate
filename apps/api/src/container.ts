@@ -5,10 +5,12 @@ import { createPool } from './infrastructure/postgres.js';
 import { createRedis } from './infrastructure/redis.js';
 import { systemClock } from './lib/clock.js';
 import { RedisEphemeralStore } from './lib/ephemeral-store.js';
+import { PostgresApiKeyRepository } from './modules/api-keys/api-key-repository.postgres.js';
 import { AuditLogger } from './modules/audit/audit-logger.js';
 import { MongoAuditStore } from './modules/audit/audit-store.mongo.js';
 import { RedisLoginThrottleStore } from './modules/auth/login-throttle.redis.js';
 import { RedisMfaChallengeStore } from './modules/auth/mfa-challenge.redis.js';
+import { PostgresPolicyRepository } from './modules/authorization/policy-repository.postgres.js';
 import { RedisSessionStore } from './modules/sessions/session-store.redis.js';
 import {
   PostgresRoleRepository,
@@ -44,6 +46,9 @@ export async function createDependencies(
     loginThrottle: new RedisLoginThrottleStore(redis),
     mfaChallenges: new RedisMfaChallengeStore(redis),
     pendingMfaSetups: new RedisEphemeralStore(redis, 'sg:mfa:setup:'),
+    apiKeys: new PostgresApiKeyRepository(pool),
+    policies: new PostgresPolicyRepository(pool),
+    auditQuery: auditStore,
     audit: new AuditLogger(auditStore, systemClock, {
       onError: (error, buffered) => {
         console.error(`Audit write failed (${buffered} events buffered): ${String(error)}`);

@@ -7,7 +7,9 @@ import type { LoginThrottleRules } from '../modules/auth/login-throttle.js';
 import type { HealthProbe } from '../modules/health/health.routes.js';
 import { PasswordHasher } from '../modules/users/password-hasher.js';
 import { testConfig } from './config.js';
+import { InMemoryApiKeyRepository } from './in-memory-api-keys.js';
 import { InMemoryAuditStore } from './in-memory-audit-store.js';
+import { InMemoryPolicyRepository } from './in-memory-policies.js';
 import { InMemoryLoginThrottleStore, InMemoryMfaChallengeStore } from './in-memory-auth-stores.js';
 import { InMemorySessionStore } from './in-memory-sessions.js';
 import { InMemoryRoleRepository, InMemoryUserRepository } from './in-memory-users.js';
@@ -24,6 +26,8 @@ export interface TestContext {
   auditStore: InMemoryAuditStore;
   audit: AuditLogger;
   hasher: PasswordHasher;
+  apiKeys: InMemoryApiKeyRepository;
+  policies: InMemoryPolicyRepository;
 }
 
 export interface TestAppOptions {
@@ -45,6 +49,8 @@ export async function createTestApp(options: TestAppOptions = {}): Promise<TestC
   const auditStore = new InMemoryAuditStore();
   const audit = new AuditLogger(auditStore, clock);
   const hasher = new PasswordHasher();
+  const apiKeys = new InMemoryApiKeyRepository();
+  const policies = new InMemoryPolicyRepository();
 
   const app = await buildApp({
     config,
@@ -56,11 +62,14 @@ export async function createTestApp(options: TestAppOptions = {}): Promise<TestC
     loginThrottle: new InMemoryLoginThrottleStore(clock),
     mfaChallenges: new InMemoryMfaChallengeStore(clock),
     pendingMfaSetups: new InMemoryEphemeralStore(clock),
+    apiKeys,
+    policies,
+    auditQuery: auditStore,
     audit,
     hasher,
     ...(options.throttleRules ? { throttleRules: options.throttleRules } : {}),
   });
-  return { app, clock, config, users, sessions, auditStore, audit, hasher };
+  return { app, clock, config, users, sessions, auditStore, audit, hasher, apiKeys, policies };
 }
 
 export async function createUser(

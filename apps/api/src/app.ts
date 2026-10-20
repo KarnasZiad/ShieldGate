@@ -16,7 +16,12 @@ import type { AppConfig } from './config.js';
 import type { Clock } from './lib/clock.js';
 import { SecretBox } from './lib/crypto/secret-box.js';
 import type { EphemeralStore } from './lib/ephemeral-store.js';
+import type { ApiKeyRepository } from './modules/api-keys/api-key.js';
+import { apiKeysRoutes } from './modules/api-keys/api-keys.routes.js';
+import { ApiKeysService } from './modules/api-keys/api-keys.service.js';
+import type { AuditQuery } from './modules/audit/audit-event.js';
 import type { AuditLogger } from './modules/audit/audit-logger.js';
+import { auditRoutes } from './modules/audit/audit.routes.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
 import { AuthService } from './modules/auth/auth.service.js';
 import {
@@ -26,7 +31,12 @@ import {
   type LoginThrottleStore,
 } from './modules/auth/login-throttle.js';
 import type { MfaChallengeStore } from './modules/auth/mfa-challenge.js';
+import { authorizationRoutes } from './modules/authorization/authorization.routes.js';
 import { PolicyEngine } from './modules/authorization/policy-engine.js';
+import {
+  CachedPolicySource,
+  type PolicyRepository,
+} from './modules/authorization/policy-repository.js';
 import { type HealthProbe, healthRoutes } from './modules/health/health.routes.js';
 import { mfaRoutes } from './modules/mfa/mfa.routes.js';
 import { MfaService } from './modules/mfa/mfa.service.js';
@@ -60,6 +70,9 @@ export interface AppDeps {
   throttleRules?: Partial<LoginThrottleRules>;
   /** Pending TOTP enrollments (sealed secrets), 10 minutes. */
   pendingMfaSetups: EphemeralStore;
+  apiKeys: ApiKeyRepository;
+  policies: PolicyRepository;
+  auditQuery: AuditQuery;
 }
 
 export type App = FastifyInstance<
@@ -126,7 +139,9 @@ export async function buildApp(deps: AppDeps): Promise<App> {
     ...DEFAULT_THROTTLE_RULES,
     ...deps.throttleRules,
   });
-  const guards = createGuards(new PolicyEngine(deps.clock));
+  const engine = new PolicyEngine(deps.clock);
+  const guards = createGuards(engine);
+  const apiKeys = new ApiKeysService(deps.apiKeys, config.API_KEY_PEPPER, deps.audit, deps.clock);
   const auth = new AuthService({
     users: deps.users,
     roles: deps.roles,
@@ -156,7 +171,11 @@ export async function buildApp(deps: AppDeps): Promise<App> {
   await app.register(securityPlugin, { config });
   await app.register(rateLimitPlugin, deps.redis ? { redis: deps.redis } : {});
   await app.register(cookie);
-  await app.register(authenticatePlugin, { sessions: deps.sessions, cookieName });
+  await app.register(authenticatePlugin, {
+    sessions: deps.sessions,
+    cookieName,
+    apiKeys: (token) => apiKeys.authenticate(token),
+  });
   await app.register(csrfPlugin, { allowedOrigins: config.CONSOLE_ORIGINS });
 
   await app.register(healthRoutes, { probes: deps.healthProbes });
@@ -179,6 +198,16 @@ export async function buildApp(deps: AppDeps): Promise<App> {
     guards,
   });
   await app.register(mfaRoutes, { prefix: '/v1/me/mfa', mfa, guards });
+  await app.register(apiKeysRoutes, { prefix: '/v1/api-keys', service: apiKeys, guards });
+  await app.register(authorizationRoutes, {
+    prefix: '/v1',
+    engine,
+    repository: deps.policies,
+    source: new CachedPolicySource(deps.policies, deps.clock),
+    audit: deps.audit,
+    guards,
+  });
+  await app.register(auditRoutes, { prefix: '/v1', query: deps.auditQuery, guards });
   await app.register(usersRoutes, {
     prefix: '/v1',
     service: usersService,
