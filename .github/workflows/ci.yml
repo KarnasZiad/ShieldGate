@@ -38,7 +38,7 @@ jobs:
           retention-days: 7
 
   integration:
-    name: Integration tests (PostgreSQL, Redis)
+    name: Integration tests (PostgreSQL, MongoDB, Redis)
     needs: quality
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -50,6 +50,9 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # Pulling up front keeps image downloads out of the containers' startup timeouts.
+      - name: Pull test images
+        run: docker pull --quiet postgres:17-alpine & docker pull --quiet mongo:8.0 & docker pull --quiet redis:7.4-alpine & wait
       - run: pnpm test:integration
 
   docker:

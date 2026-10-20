@@ -256,6 +256,7 @@ describe('PostgreSQL API keys and policies', () => {
     await expect(policies.list()).resolves.toEqual([{ ...policy, description: 'updated' }]);
 
     await pool.query(`UPDATE policies SET condition = '{"eval": "x"}'`);
-    await expect(policies.list()).rejects.toThrow();
+    await expect(policies.list()).rejects.toThrow('Stored policy "no-self-approval" is invalid');
+    await pool.query('TRUNCATE policies');
   });
 });
