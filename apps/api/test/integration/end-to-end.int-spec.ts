@@ -18,6 +18,8 @@ describe('ShieldGate end to end', () => {
       MONGODB_URL: inject('mongoUrl'),
       MONGODB_DATABASE: 'shieldgate_e2e',
       REDIS_URL: inject('redisUrl'),
+      // Unexpected errors are logged, so a failure here can be diagnosed from the CI output.
+      LOG_LEVEL: 'error',
     });
     const created = await createDependencies(config);
     close = created.close;
