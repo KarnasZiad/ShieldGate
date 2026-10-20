@@ -23,21 +23,22 @@ journal d'audit, pour toutes les applications d'une entreprise.
 
 ## Ce que fait ShieldGate
 
-| Fonction               | Détail                                                                              |
-| ---------------------- | ----------------------------------------------------------------------------------- |
-| Connexion              | Argon2id, réponses identiques pour tout échec, session opaque dans Redis            |
-| Protection des comptes | Verrouillage après 5 échecs, blocage des IP qui pratiquent le credential stuffing   |
-| MFA                    | TOTP (RFC 6238), secret chiffré AES-256-GCM, code à usage unique                    |
-| Sessions               | Liste et révocation immédiate par l'utilisateur ou un administrateur                |
-| Clés API               | `sg_live_…`, HMAC-SHA256 avec pepper, portées, expiration, révocation               |
-| Autorisation           | `POST /v1/authorize` : politiques RBAC + ABAC, refus par défaut, `deny` prioritaire |
-| Audit                  | Événements au format Elastic Common Schema dans MongoDB, en ajout seul              |
+| Fonction               | Détail                                                                               |
+| ---------------------- | ------------------------------------------------------------------------------------ |
+| Connexion              | Argon2id, réponses identiques pour tout échec, session opaque dans Redis             |
+| Protection des comptes | Verrouillage après 5 échecs, blocage des IP qui pratiquent le credential stuffing    |
+| MFA                    | TOTP (RFC 6238), secret chiffré AES-256-GCM, code à usage unique                     |
+| Sessions               | Liste et révocation immédiate par l'utilisateur ou un administrateur                 |
+| Clés API               | `sg_live_…`, HMAC-SHA256 avec pepper, portées, expiration, révocation                |
+| Autorisation           | `POST /v1/authorize` : politiques RBAC + ABAC, refus par défaut, `deny` prioritaire  |
+| Audit                  | Événements au format Elastic Common Schema dans MongoDB, en ajout seul               |
+| Console                | Vue 3 : comptes, sessions, MFA, clés API, éditeur et simulateur de politiques, audit |
 
 ## Sécurité
 
 | Document                                                             | Contenu                                            |
 | -------------------------------------------------------------------- | -------------------------------------------------- |
-| [Modèle de menaces STRIDE](docs/security/threat-model-stride.md)     | 20 menaces, leurs mesures et les risques résiduels |
+| [Modèle de menaces STRIDE](docs/security/threat-model-stride.md)     | 21 menaces, leurs mesures et les risques résiduels |
 | [Checklist ASVS niveau 2](docs/security/asvs-l2.md)                  | Chaque exigence avec son code et son test          |
 | [Flux d'authentification](docs/architecture/authentication-flows.md) | Connexion, MFA, sessions, verrouillage             |
 | [Modèle d'autorisation](docs/architecture/authorization-model.md)    | Politiques, logique à trois valeurs                |
@@ -70,9 +71,10 @@ Détails : [C4](docs/architecture/c4.md), [modèle de données](docs/database.md
 | Couche  | Technologies                                                        |
 | ------- | ------------------------------------------------------------------- |
 | API     | Node.js 22, Fastify 5, Zod 4 (validation, filtrage, OpenAPI), Pino  |
+| Console | Vue 3.5, Pinia, Vue Router, Tailwind CSS 4, Nginx (CSP stricte)     |
 | Données | PostgreSQL 17 (`citext`, `jsonb`), MongoDB 8, Redis 7 (HyperLogLog) |
 | Crypto  | `node:crypto`, `@node-rs/argon2`                                    |
-| Tests   | Vitest, `fastify.inject`, Testcontainers                            |
+| Tests   | Vitest, `fastify.inject`, Vue Test Utils, Testcontainers            |
 | CI/CD   | GitHub Actions, CodeQL, Trivy, Dependabot, images sur GHCR          |
 
 ## Démarrage rapide
@@ -88,8 +90,20 @@ pnpm --filter @shieldgate/api db:seed       # premier administrateur (SEED_ADMIN
 pnpm dev
 ```
 
+- Console : <http://localhost:5173> (Vite relaie `/v1` vers l'API : même origine qu'en production)
 - API : <http://localhost:4000>
 - Documentation OpenAPI : <http://localhost:4000/docs>
+
+Pile complète construite depuis les Dockerfiles, console servie par Nginx :
+
+```bash
+cp .env.example .env                        # TOTP_ENCRYPTION_KEYS et API_KEY_PEPPER
+docker compose --profile app up -d --build
+docker compose run --rm -e SEED_ADMIN_EMAIL=admin@shieldgate.local \
+  -e SEED_ADMIN_PASSWORD='une longue phrase de passe' migrate node dist/cli/seed.js
+```
+
+La console répond alors sur <http://localhost:8080>.
 
 ## API
 
@@ -115,7 +129,7 @@ pnpm dev
 ## Tests et qualité
 
 ```bash
-pnpm test:coverage       # tests unitaires et HTTP (fastify.inject), seuil 80 %
+pnpm test:coverage       # API (fastify.inject) et console (Vue Test Utils), seuil 80 %
 pnpm test:integration    # PostgreSQL, MongoDB et Redis réels (Docker requis)
 ```
 
@@ -124,6 +138,7 @@ pnpm test:integration    # PostgreSQL, MongoDB et Redis réels (Docker requis)
 | Unitaires   | Vecteurs RFC 4226/6238/4648/4231, AES-GCM falsifié, moteur de politiques, politique de mots de passe |
 | HTTP        | Énumération, verrouillage, stuffing, fixation de session, CSRF, expirations, IDOR, rejeu TOTP        |
 | Intégration | Verrou de migration, unicité `citext`, TOTP concurrent, HyperLogLog, index TTL, bout en bout         |
+| Console     | Connexion en deux étapes, redirections sûres, écrans masqués selon les permissions, clé vue une fois |
 
 Chaque pull request passe par la CI (format, lint, typecheck, tests et couverture, build, tests
 d'intégration, image Docker scannée, CodeQL, Trivy, revue des dépendances) et par la checklist
@@ -135,7 +150,7 @@ sécurité du [template de PR](.github/pull_request_template.md).
 - [x] Comptes, sessions Redis, verrouillage, détection de credential stuffing, CSRF
 - [x] MFA TOTP, clés API, moteur de politiques RBAC + ABAC, point de décision
 - [x] Journal d'audit ECS dans MongoDB, checklist ASVS niveau 2
-- [ ] Console d'administration Vue 3 (comptes, sessions, clés, politiques, audit)
+- [x] Console d'administration Vue 3 (comptes, sessions, clés, politiques, audit)
 - [ ] MFA obligatoire pour les administrateurs, audit des refus 403
 - [ ] OAuth 2.1 / OpenID Connect (`oidc-provider`), rotation des clés JWKS
 - [ ] Passkeys WebAuthn, connexion Google et GitHub

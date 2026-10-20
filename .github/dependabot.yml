@@ -34,3 +34,13 @@ updates:
       # The base image follows the Node.js LTS line pinned in .nvmrc.
       - dependency-name: node
         update-types: ['version-update:semver-major']
+
+  - package-ecosystem: docker
+    directory: /apps/console
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: build
+    ignore:
+      - dependency-name: node
+        update-types: ['version-update:semver-major']

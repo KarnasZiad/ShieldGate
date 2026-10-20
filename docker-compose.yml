@@ -1,6 +1,6 @@
 # Local stack.
 #   docker compose up -d                  PostgreSQL, MongoDB and Redis (run the API with pnpm dev)
-#   docker compose --profile app up -d    full stack built from the Dockerfiles
+#   docker compose --profile app up -d    full stack built from the Dockerfiles (console on :8080)
 name: shieldgate
 
 services:
@@ -61,6 +61,8 @@ services:
       MONGODB_URL: mongodb://shieldgate:shieldgate@mongo:27017/?authSource=shieldgate
       REDIS_URL: redis://redis:6379
       CONSOLE_ORIGINS: http://localhost:8080
+      # The console's Nginx is the only hop in front of the API.
+      TRUST_PROXY_HOPS: '1'
       # The local stack is served over plain HTTP.
       COOKIE_SECURE: 'false'
       TOTP_ENCRYPTION_KEYS: ${TOTP_ENCRYPTION_KEYS:?Set TOTP_ENCRYPTION_KEYS in .env}
@@ -75,8 +77,9 @@ services:
       context: .
       dockerfile: apps/api/Dockerfile
     environment: *api-environment
+    # Loopback only: behind one trusted hop, a direct caller could forge X-Forwarded-For.
     ports:
-      - '4000:4000'
+      - '127.0.0.1:4000:4000'
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -84,6 +87,17 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    restart: unless-stopped
+
+  console:
+    profiles: [app]
+    build:
+      context: .
+      dockerfile: apps/console/Dockerfile
+    ports:
+      - '8080:8080'
+    depends_on:
+      - api
     restart: unless-stopped
 
 volumes:
