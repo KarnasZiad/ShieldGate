@@ -17,7 +17,7 @@ RUN pnpm --filter @shieldgate/console build \
  && find apps/console/dist -name '*.map' -delete
 
 # ---- Runtime: static files only, Nginx running as an unprivileged user.
-FROM nginxinc/nginx-unprivileged:1.30-alpine AS runtime
+FROM nginxinc/nginx-unprivileged:1.31-alpine AS runtime
 COPY apps/console/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /repo/apps/console/dist /usr/share/nginx/html
 # The base image already runs as nginx (uid 101); stating it keeps the guarantee explicit.
